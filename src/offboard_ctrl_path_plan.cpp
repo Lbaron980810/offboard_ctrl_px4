@@ -55,8 +55,14 @@ void voxbloxRrtPoly_cb(const visualization_msgs::MarkerArray msg){
     }
     path_updated = true;
     ROS_INFO("voxbloxRRTPoly result received!");
-    cout << waypointList.size() << endl;
     ROS_INFO("Points number: %d", int(waypointList.size()));
+    for (int i = 0; i < waypointList.size(); i++)
+    {
+        waypointList[i].pose.position.x--;
+        waypointList[i].pose.position.y--;
+        cout << "waypoint:" << "    " << waypointList[i].pose.position.x << "    " << waypointList[i].pose.position.y << "   " << waypointList[i].pose.position.z << endl;
+    }
+
 }
 
 
@@ -77,11 +83,16 @@ void globalpose_cb(const gazebo_msgs::ModelStatesConstPtr &msg){
 	}
 }
 // check whether the vehicle has reached the target point
+// bool reach_target(geometry_msgs::PoseStamped target){
 bool reach_target(geometry_msgs::PoseStamped target){
-    float thresh = 0.5;
-    if (abs(current_pose.pose.position.x-target.pose.position.x) <= thresh && 
-        abs(current_pose.pose.position.y-target.pose.position.y) <= thresh && 
-        abs(current_pose.pose.position.z-target.pose.position.z) <= thresh)
+    float thresh = 0.1;
+    float diff_x = abs(current_pose.pose.position.x-target.pose.position.x);
+    float diff_y = abs(current_pose.pose.position.y-target.pose.position.y);
+    float diff_z = abs(current_pose.pose.position.z-target.pose.position.z);
+    // cout << "current pose"  << "    " << current_pose.pose.position.x   << "    " << current_pose.pose.position.y   << "    " << current_pose.pose.position.z << endl;
+    // cout << "target pose"   << "    " << target.pose.position.x         << "    " << target.pose.position.y         << "    " << target.pose.position.z << endl;
+    // cout << "diff"          << "    " << diff_x                         << "    " << diff_y                         << "    " << diff_z << endl;
+    if ( diff_x <= thresh && diff_y <= thresh && diff_z <= thresh)
     {
         return true;
     }
@@ -102,9 +113,9 @@ int main(int argc, char **argv)
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
             ("mavros/set_mode");
             
-//    ros::Subscriber localpose_sub = nh.subscribe<geometry_msgs::PoseStamped>
-//            ("mavros/local_position/pose", 10, localpose_cb);
-    ros::Subscriber globalpose_sub = nh.subscribe<gazebo_msgs::ModelStates>("/gazebo/model_states", 10, &globalpose_cb);
+   ros::Subscriber localpose_sub = nh.subscribe<geometry_msgs::PoseStamped>
+           ("mavros/local_position/pose", 10, localpose_cb);
+    // ros::Subscriber globalpose_sub = nh.subscribe<gazebo_msgs::ModelStates>("/gazebo/model_states", 10, &globalpose_cb);
     ros::Subscriber waypoint_sub = nh.subscribe<visualization_msgs::Marker>
             ("demo_node/grid_path_vis", 10, waypoint_cb);
     ros::Subscriber voxbloxRrtPoly_sub = nh.subscribe<visualization_msgs::MarkerArray>
@@ -179,6 +190,9 @@ int main(int argc, char **argv)
             if (reach_target(pose_next) && iter != waypointList.end())
             {
                 pose_next = *iter;
+                // pose_next.pose.position.x += 8;
+                // pose_next.pose.position.y -= 8;
+                // pose_next.pose.position.z -= 2;
                 iter++;
             }
             else if (reach_target(waypointList.back()) && iter == waypointList.end() && path_finished_flag)
@@ -188,10 +202,17 @@ int main(int argc, char **argv)
             }   
         }
             
+        // cout << "current pose" << " " << current_pose.pose.position.x << "     " << current_pose.pose.position.y << "     " << current_pose.pose.position.z << "     " << endl;
+        // cout << "pose_next" << "    " << pose_next.pose.position.x << "     " << pose_next.pose.position.y << "     " << pose_next.pose.position.z << endl;
         local_pos_pub.publish(pose_next);
-        cout << "diff x" << current_pose.pose.position.x - pose_next.pose.position.x << endl;
-        cout << "diff y" << current_pose.pose.position.y - pose_next.pose.position.y << endl;
-        cout << "diff z" << current_pose.pose.position.z - pose_next.pose.position.z << endl;
+
+        
+
+        // cout << "current pose:" << current_pose.pose.position.x  << endl;
+        // cout << "next pose:" << pose_next.pose.position.x << endl;
+        // cout << "diff x" << current_pose.pose.position.x - pose_next.pose.position.x << endl;
+        // cout << "diff y" << current_pose.pose.position.y - pose_next.pose.position.y << endl;
+        // cout << "diff z" << current_pose.pose.position.z - pose_next.pose.position.z << endl;
 
         ros::spinOnce();
         rate.sleep();
