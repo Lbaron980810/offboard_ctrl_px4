@@ -120,9 +120,13 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+
+find_package(Eigen3 REQUIRED)
+set(Eigen3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -169,6 +173,12 @@ target_link_libraries(${PROJECT_NAME}_node
 add_executable(offboard_path_plan src/offboard_ctrl_path_plan.cpp)
 target_link_libraries(offboard_path_plan
   ${catkin_LIBRARIES}
+)
+
+add_executable(offboard_traj_plan src/offboard_ctrl_traj_plan.cpp)
+target_link_libraries(offboard_traj_plan 
+  ${catkin_LIBRARIES}
+  ${Eigen3_INCLUDE_DIRS}
 )
 #############
 ## Install ##
